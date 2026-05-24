@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreeToMint · NFT Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ── Design system ─────────────────────────────────────────────────── */
+:root {
+  --bg:        #0a0a0f;
+  --bg2:       #111118;
+  --bg3:       #1a1a24;
+  --border:    #2a2a3a;
+  --border2:   #3a3a50;
+  --text:      #e8e8f0;
+  --text2:     #9090b0;
+  --text3:     #5a5a7a;
+  --accent:    #00e5ff;
+  --accent2:   #ff3cac;
+  --accent3:   #7b2fff;
+  --green:     #00ff88;
+  --yellow:    #ffcc00;
+  --red:       #ff4466;
+  --radius:    10px;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-mono:    'DM Mono', monospace;
+  --font-body:    'DM Sans', sans-serif;
+  --glow-cyan:  0 0 20px rgba(0,229,255,.3), 0 0 60px rgba(0,229,255,.1);
+  --glow-pink:  0 0 20px rgba(255,60,172,.3);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Gradient orbs */
+body::after {
+  content: '';
+  position: fixed;
+  top: -200px; right: -200px;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(123,47,255,.12), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Layout ────────────────────────────────────────────────────────── */
+.app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 20px 80px; }
+
+/* ── Header ────────────────────────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 0 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.logo {
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.logo span { color: var(--text2); -webkit-text-fill-color: var(--text2); font-size: 14px; font-family: var(--font-mono); display: block; letter-spacing: 4px; }
+
+.header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* Chain selector */
+.chain-select {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239090b0'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+/* Wallet button */
+.btn-wallet {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-wallet:hover, .btn-wallet.connected { background: rgba(0,229,255,.1); box-shadow: var(--glow-cyan); }
+.btn-wallet.connected { color: var(--green); border-color: var(--green); background: rgba(0,255,136,.08); }
+
+/* ── Status bar ────────────────────────────────────────────────────── */
+#status-bar {
+  display: none;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  gap: 8px;
+  align-items: center;
+}
+#status-bar.show { display: flex; }
+#status-bar.success { border-color: var(--green); color: var(--green); }
+#status-bar.error   { border-color: var(--red); color: var(--red); }
+#status-bar.info    { border-color: var(--accent); color: var(--accent); }
+#status-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── Tabs ──────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Section headings ──────────────────────────────────────────────── */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 2px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.section-sub { color: var(--text3); font-size: 13px; font-family: var(--font-mono); margin-bottom: 24px; }
+
+/* ── Cards & panels ────────────────────────────────────────────────── */
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  margin-bottom: 16px;
+}
+
+/* ── Form elements ─────────────────────────────────────────────────── */
+.field { margin-bottom: 20px; }
+.field label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.field label span { color: var(--accent2); margin-left: 4px; }
+
+input[type="text"], input[type="url"], input[type="number"], textarea, select.field-select {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 12px 14px;
+  outline: none;
+  transition: border-color .2s;
+  resize: vertical;
+}
+input:focus, textarea:focus, select.field-select:focus { border-color: var(--accent); }
+input::placeholder, textarea::placeholder { color: var(--text3); }
+textarea { min-height: 80px; }
+
+/* ── File drop zones ────────────────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed var(--border2);
+  border-radius: 14px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .25s;
+  position: relative;
+  overflow: hidden;
+}
+.drop-zone:hover, .drop-zone.over {
+  border-color: var(--accent);
+  background: rgba(0,229,255,.04);
+}
+.drop-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.drop-icon { font-size: 36px; margin-bottom: 8px; }
+.drop-label { font-family: var(--font-mono); font-size: 12px; color: var(--text2); }
+.drop-hint  { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* Preview inside drop zone */
+.preview-wrap { display: none; }
+.drop-zone.has-file .drop-inner { display: none; }
+.drop-zone.has-file .preview-wrap { display: flex; align-items: center; gap: 16px; }
+.preview-img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border2); }
+.preview-info { text-align: left; }
+.preview-name { font-family: var(--font-mono); font-size: 12px; color: var(--text); word-break: break-all; }
+.preview-size { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.preview-remove {
+  margin-left: auto; background: none; border: 1px solid var(--red);
+  color: var(--red); border-radius: 6px; padding: 4px 10px;
+  font-size: 11px; cursor: pointer; font-family: var(--font-mono);
+}
+
+/* ── Two-column layout for mint form ──────────────────────────────── */
+.mint-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 700px) { .mint-grid { grid-template-columns: 1fr; } }
+
+/* ── Attributes builder ────────────────────────────────────────────── */
+.attr-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.attr-row input { flex: 1; }
+.attr-remove { background: none; border: none; color: var(--red); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; }
+.btn-add-attr {
+  background: none;
+  border: 1px dashed var(--border2);
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .2s;
+  margin-top: 4px;
+}
+.btn-add-attr:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: none; border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 13px; font-weight: 500;
+  padding: 14px 28px; cursor: pointer;
+  transition: all .2s; letter-spacing: .5px;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent3), var(--accent2));
+  color: #fff;
+}
+.btn-primary:hover { opacity: .88; transform: translateY(-1px); box-shadow: var(--glow-pink); }
+.btn-primary:disabled { opacity: .35; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-outline {
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--text2);
+}
+.btn-outline:hover { border-color: var(--text); color: var(--text); }
+.btn-accent {
+  background: transparent; border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.btn-accent:hover { background: rgba(0,229,255,.1); box-shadow: var(--glow-cyan); }
+.btn-full { width: 100%; }
+.btn .spin { animation: spin .8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Progress ───────────────────────────────────────────────────────── */
+.progress-wrap { margin: 16px 0; display: none; }
+.progress-wrap.show { display: block; }
+.progress-label { font-family: var(--font-mono); font-size: 11px; color: var(--text2); margin-bottom: 6px; display: flex; justify-content: space-between; }
+.progress-bar { background: var(--bg3); border-radius: 4px; height: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent3), var(--accent)); border-radius: 4px; transition: width .3s; width: 0%; }
+
+/* ── NFT gallery ────────────────────────────────────────────────────── */
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.nft-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all .25s;
+  cursor: pointer;
+}
+.nft-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+.nft-card-img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: var(--bg3); }
+.nft-card-img-placeholder { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: var(--bg3); font-size: 40px; }
+.nft-card-body { padding: 14px; }
+.nft-card-name { font-family: var(--font-mono); font-size: 13px; font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nft-card-id   { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
+.nft-card-owner { font-size: 10px; color: var(--text3); font-family: var(--font-mono); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nft-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.tag { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 10px; color: var(--text2); font-family: var(--font-mono); }
+
+/* ── Contract address display ─────────────────────────────────────── */
+.contract-display {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  word-break: break-all; margin-bottom: 16px;
+}
+.copy-btn { background: none; border: 1px solid var(--border2); color: var(--text2); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Metadata JSON editor ─────────────────────────────────────────── */
+.json-preview {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text2);
+  white-space: pre;
+  overflow-x: auto;
+  max-height: 280px;
+  line-height: 1.7;
+}
+.json-key   { color: var(--accent); }
+.json-str   { color: var(--green); }
+.json-num   { color: var(--yellow); }
+.json-bool  { color: var(--accent2); }
+
+/* ── IPFS / chain info ────────────────────────────────────────────── */
+.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.info-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.info-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+.info-value { font-family: var(--font-mono); font-size: 13px; color: var(--text); word-break: break-all; }
+.info-value.accent  { color: var(--accent); }
+.info-value.green   { color: var(--green); }
+.info-value.yellow  { color: var(--yellow); }
+
+/* ── Transaction log ─────────────────────────────────────────────── */
+.tx-log { display: flex; flex-direction: column; gap: 8px; }
+.tx-item { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 11px; }
+.tx-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tx-dot.success { background: var(--green); }
+.tx-dot.pending { background: var(--yellow); animation: pulse 1.5s infinite; }
+.tx-dot.error   { background: var(--red); }
+.tx-hash { color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.tx-hash:hover { text-decoration: underline; }
+.tx-time { color: var(--text3); flex-shrink: 0; }
+
+/* ── Modal ──────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.85);
+  z-index: 1000; display: none; align-items: center; justify-content: center;
+  padding: 20px; backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 16px; padding: 32px; max-width: 480px; width: 100%;
+  position: relative; max-height: 90vh; overflow-y: auto;
+}
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: var(--text3);
+  cursor: pointer; font-size: 20px; line-height: 1;
+}
+.modal-close:hover { color: var(--text); }
+.modal-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; margin-bottom: 20px; background: var(--bg3); }
+.modal-title { font-family: var(--font-display); font-size: 26px; letter-spacing: 1px; margin-bottom: 8px; }
+.modal-desc { color: var(--text2); font-size: 13px; line-height: 1.7; margin-bottom: 16px; }
+.modal-attrs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.attr-chip { background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 6px 12px; }
+.attr-chip-key { font-size: 10px; color: var(--text3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; }
+.attr-chip-val { font-size: 13px; font-family: var(--font-mono); color: var(--text); }
+
+/* ── Transfer widget ─────────────────────────────────────────────── */
+.transfer-row { display: flex; gap: 8px; }
+.transfer-row input { flex: 1; }
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-family: var(--font-mono); font-size: 13px; }
+
+/* ── Scrollbar ──────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+/* ── Fade animations ────────────────────────────────────────────────── */
+.fade-in { animation: fadeIn .3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── Tooltip ─────────────────────────────────────────────────────── */
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--font-mono); font-size: 11px;
+  padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 100;
+}
+
+/* ── Network badge ──────────────────────────────────────────────────── */
+.net-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 4px 12px 4px 8px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--text2);
+}
+.net-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+/* ── Step indicator ─────────────────────────────────────────────────── */
+.steps { display: flex; gap: 0; margin-bottom: 28px; }
+.step { flex: 1; padding: 12px; text-align: center; border-bottom: 2px solid var(--border); }
+.step.done { border-bottom-color: var(--green); }
+.step.active { border-bottom-color: var(--accent); }
+.step-num { font-family: var(--font-display); font-size: 20px; color: var(--text3); }
+.step.done .step-num { color: var(--green); }
+.step.active .step-num { color: var(--accent); }
+.step-label { font-family: var(--font-mono); font-size: 10px; color: var(--text3); margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
+.step.active .step-label { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+    <header>
+    <div>
+      <div class="logo">FreeToMint<span>NFT STUDIO · ERC-721</span></div>
+    </div>
+    <div class="header-right">
+      <div id="net-badge" class="net-badge" style="display:none">
+        <span class="net-dot"></span>
+        <span id="net-name">—</span>
+      </div>
+      <select class="chain-select" id="chain-select">
+        <option value="1">Ethereum Mainnet</option>
+        <option value="11155111" selected>Ethereum Sepolia</option>
+        <option value="137">Polygon Mainnet</option>
+        <option value="80002">Polygon Amoy</option>
+        <option value="56">BNB Chain</option>
+        <option value="97">BNB Testnet</option>
+        <option value="42161">Arbitrum One</option>
+        <option value="421614">Arbitrum Sepolia</option>
+        <option value="8453">Base</option>
+        <option value="84532">Base Sepolia</option>
+        <option value="43114">Avalanche</option>
+        <option value="10">Optimism</option>
+      </select>
+      <button class="btn-wallet" id="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+  </header>
+
+  <!-- ── Status bar ──────────────────────────────────────────────────── -->
+  <div id="status-bar">
+    <span class="dot"></span>
+    <span id="status-msg">—</span>
+  </div>
+
+  <!-- ── Tabs ────────────────────────────────────────────────────────── -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('mint',this)">Mint NFT</button>
+    <button class="tab-btn"       onclick="switchTab('gallery',this)">My Gallery</button>
+    <button class="tab-btn"       onclick="switchTab('contract',this)">Contract</button>
+    <button class="tab-btn"       onclick="switchTab('metadata',this)">Metadata Builder</button>
+    <button class="tab-btn"       onclick="switchTab('txlog',this)">Tx Log</button>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!--  TAB: MINT NFT                                                   -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div id="tab-mint" class="tab-panel active">
+
+    <div class="steps" id="mint-steps">
+      <div class="step active" id="step-1"><div class="step-num">01</div><div class="step-label">Upload Files</div></div>
+      <div class="step"        id="step-2"><div class="step-num">02</div><div class="step-label">Pin to IPFS</div></div>
+      <div class="step"        id="step-3"><div class="step-num">03</div><div class="step-label">Mint On-Chain</div></div>
+      <div class="step"        id="step-4"><div class="step-num">04</div><div class="step-label">Confirmed</div></div>
+    </div>
+
+    <div class="mint-grid">
+
+      <!-- ── Left: Image upload ─────────────────────────── -->
+      <div>
+        <div class="section-title">Artwork</div>
+        <div class="section-sub">PNG · JPG · GIF · MP4 · GLB</div>
+
+        <div class="drop-zone" id="img-drop">
+          <input type="file" id="img-input" accept="image/*,video/mp4,.glb"
+            onchange="handleImageFile(this.files[0])">
+          <div class="drop-inner">
+            <div class="drop-icon">🖼️</div>
+            <div class="drop-label">Drop artwork here or click to browse</div>
+            <div class="drop-hint">Max 50 MB · PNG recommended for OpenSea</div>
+          </div>
+          <div class="preview-wrap">
+            <img id="img-preview" class="preview-img" src="" alt="">
+            <div class="preview-info">
+              <div class="preview-name" id="img-name">—</div>
+              <div class="preview-size" id="img-size">—</div>
+            </div>
+            <button class="preview-remove" onclick="clearImage(event)">✕</button>
+          </div>
+        </div>
+
+        <div style="margin-top:16px">
+          <div class="section-title" style="font-size:18px;margin-bottom:4px">Metadata JSON</div>
+          <div class="section-sub" style="margin-bottom:12px">Upload existing .json or fill form →</div>
+          <div class="drop-zone" id="json-drop">
+            <input type="file" id="json-input" accept=".json,application/json"
+              onchange="handleJsonFile(this.files[0])">
+            <div class="drop-inner">
+              <div class="drop-icon">📄</div>
+              <div class="drop-label">Drop metadata.json or click to browse</div>
+              <div class="drop-hint">OpenSea-compatible JSON format</div>
+            </div>
+            <div class="preview-wrap">
+              <span style="font-size:32px">📄</span>
+              <div class="preview-info">
+                <div class="preview-name" id="json-name">—</div>
+                <div class="preview-size" id="json-size">—</div>
+              </div>
+              <button class="preview-remove" onclick="clearJson(event)">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Right: NFT details form ────────────────────── -->
+      <div>
+        <div class="section-title">NFT Details</div>
+        <div class="section-sub">These populate the metadata JSON</div>
+
+        <div class="panel" style="padding:20px">
+          <div class="field">
+            <label>Name <span>*</span></label>
+            <input type="text" id="nft-name" placeholder="e.g. Dragon #001" oninput="updateJsonPreview()">
+          </div>
+          <div class="field">
+            <label>Description</label>
+            <textarea id="nft-desc" placeholder="Describe your NFT..." oninput="updateJsonPreview()"></textarea>
+          </div>
+          <div class="field">
+            <label>External URL</label>
+            <input type="url" id="nft-url" placeholder="https://yoursite.com/nft/1" oninput="updateJsonPreview()">
+          </div>
+          <div class="field">
+            <label>Background Color <span style="color:var(--text3)">(hex, no #)</span></label>
+            <input type="text" id="nft-bg" placeholder="e.g. 1a1a24" maxlength="6" oninput="updateJsonPreview()">
+          </div>
+
+          <div class="field">
+            <label>Attributes / Traits</label>
+            <div id="attrs-container"></div>
+            <button class="btn-add-attr" onclick="addAttribute()">+ Add Attribute</button>
+          </div>
+
+          <div class="field">
+            <label>Contract Address</label>
+            <input type="text" id="contract-addr" placeholder="0x… (after deploying)" oninput="updateContractDisplay()">
+          </div>
+
+          <div class="field">
+            <label>IPFS API Gateway</label>
+            <select class="field-select" id="ipfs-gateway" onchange="updateGateway()">
+              <option value="pinata">Pinata (recommended)</option>
+              <option value="nft.storage">NFT.storage</option>
+              <option value="web3.storage">Web3.storage</option>
+              <option value="local">Local (demo mode)</option>
+            </select>
+          </div>
+
+          <div id="pinata-key-field" class="field">
+            <label>Pinata JWT <span style="color:var(--text3)">(from pinata.cloud)</span></label>
+            <input type="text" id="pinata-jwt" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6...">
+          </div>
+
+          <div class="progress-wrap" id="mint-progress">
+            <div class="progress-label">
+              <span id="progress-label-text">Uploading image…</span>
+              <span id="progress-pct">0%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+          </div>
+
+          <button class="btn btn-primary btn-full" id="mint-btn" onclick="mintNFT()">
+            ⬡ Free Mint
+          </button>
+          <div style="text-align:center;margin-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--text3)">
+            Gas only · No mint price
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Minted result -->
+    <div id="mint-result" style="display:none" class="panel fade-in">
+      <div class="section-title" style="color:var(--green)">✓ Minted Successfully</div>
+      <div id="mint-result-body"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!--  TAB: GALLERY                                                    -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div id="tab-gallery" class="tab-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+      <div>
+        <div class="section-title">My NFTs</div>
+        <div class="section-sub">NFTs owned by your connected wallet</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="loadGallery()">↻ Refresh</button>
+        <button class="btn btn-accent" onclick="openOpensea()">View on OpenSea ↗</button>
+      </div>
+    </div>
+    <div class="info-grid" id="gallery-stats">
+      <div class="info-card"><div class="info-label">Total Minted</div><div class="info-value accent" id="stat-total">—</div></div>
+      <div class="info-card"><div class="info-label">Your Balance</div><div class="info-value green" id="stat-balance">—</div></div>
+      <div class="info-card"><div class="info-label">Contract</div><div class="info-value" id="stat-contract" style="font-size:10px">—</div></div>
+      <div class="info-card"><div class="info-label">Chain</div><div class="info-value yellow" id="stat-chain">—</div></div>
+    </div>
+    <div class="gallery" id="gallery-grid">
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="icon">🖼️</div>
+        <p>Connect wallet and set contract address to view your NFTs</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!--  TAB: CONTRACT                                                   -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div id="tab-contract" class="tab-panel">
+    <div class="section-title">Smart Contract</div>
+    <div class="section-sub">ERC-721 · ERC-2981 Royalties · OpenSea Compatible</div>
+
+    <div class="panel">
+      <div class="field">
+        <label>Contract Address</label>
+        <div class="contract-display">
+          <span id="contract-addr-display">Not set — enter address in Mint tab</span>
+          <button class="copy-btn" onclick="copyContract()">Copy</button>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Standard</div><div class="info-value accent">ERC-721</div></div>
+        <div class="info-card"><div class="info-label">Royalties</div><div class="info-value">ERC-2981</div></div>
+        <div class="info-card"><div class="info-label">OpenSea</div><div class="info-value green">✓ Compatible</div></div>
+        <div class="info-card"><div class="info-label">Mint Price</div><div class="info-value green">FREE</div></div>
+        <div class="info-card"><div class="info-label">Compiler</div><div class="info-value">Solidity 0.8.20</div></div>
+        <div class="info-card"><div class="info-label">License</div><div class="info-value">MIT</div></div>
+      </div>
+
+      <div class="field" style="margin-top:8px">
+        <label>Block Explorer</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="explorer-links">
+          <a id="link-etherscan"  href="#" target="_blank" class="btn btn-outline" style="font-size:12px">Etherscan ↗</a>
+          <a id="link-opensea"   href="#" target="_blank" class="btn btn-outline" style="font-size:12px">OpenSea ↗</a>
+          <a id="link-sourcify"  href="#" target="_blank" class="btn btn-outline" style="font-size:12px">Sourcify ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title" style="font-size:18px;margin-bottom:8px">Transfer NFT</div>
+      <div class="section-sub">Move any token to another wallet</div>
+      <div class="field">
+        <label>Token ID</label>
+        <input type="number" id="transfer-tokenid" placeholder="e.g. 42" min="1">
+      </div>
+      <div class="field">
+        <label>Recipient Wallet Address</label>
+        <div class="transfer-row">
+          <input type="text" id="transfer-to" placeholder="0x…">
+          <button class="btn btn-primary" onclick="transferNFT()">Transfer →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title" style="font-size:18px;margin-bottom:8px">Deployment Guide</div>
+      <div style="font-family:var(--font-mono);font-size:12px;color:var(--text2);line-height:2">
+        <div style="color:var(--text3)">── Deploying via Remix IDE (no install needed) ──</div>
+        <div>1. Open <a href="https://remix.ethereum.org" target="_blank" style="color:var(--accent)">remix.ethereum.org</a></div>
+        <div>2. Create new file → paste the <strong style="color:var(--text)">FreeToMintNFT.sol</strong> source</div>
+        <div>3. Compile with Solidity 0.8.20</div>
+        <div>4. Deploy → select "Injected Provider - MetaMask"</div>
+        <div>5. Fill constructor params → Deploy</div>
+        <div>6. Paste contract address above</div>
+        <div style="margin-top:8px;color:var(--text3)">── Supported Networks ──</div>
+        <div>Ethereum · Polygon · BNB Chain · Arbitrum · Base · Avalanche · Optimism</div>
+        <div>+ any EVM-compatible testnet or mainnet</div>
+        <div style="margin-top:8px;color:var(--text3)">── OpenSea Listing ──</div>
+        <div>Visit <a href="https://opensea.io/get-listed" target="_blank" style="color:var(--accent)">opensea.io/get-listed</a> → paste contract address</div>
+        <div>Collection metadata is served from contractURI()</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!--  TAB: METADATA BUILDER                                           -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div id="tab-metadata" class="tab-panel">
+    <div class="section-title">Metadata Builder</div>
+    <div class="section-sub">Build and preview OpenSea-compatible JSON metadata</div>
+
+    <div class="mint-grid">
+      <div>
+        <div class="panel">
+          <div class="field"><label>Name</label><input type="text" id="mb-name" placeholder="NFT Name" oninput="updateMetaBuilder()"></div>
+          <div class="field"><label>Description</label><textarea id="mb-desc" placeholder="Description" oninput="updateMetaBuilder()"></textarea></div>
+          <div class="field"><label>Image URI (IPFS/Arweave/HTTP)</label><input type="url" id="mb-image" placeholder="ipfs://Qm…" oninput="updateMetaBuilder()"></div>
+          <div class="field"><label>Animation URI (optional)</label><input type="url" id="mb-anim" placeholder="ipfs://Qm… (video/audio/3d)" oninput="updateMetaBuilder()"></div>
+          <div class="field"><label>External URL</label><input type="url" id="mb-url" placeholder="https://…" oninput="updateMetaBuilder()"></div>
+          <div class="field">
+            <label>Attributes</label>
+            <div id="mb-attrs"></div>
+            <button class="btn-add-attr" onclick="addMbAttribute()">+ Add Trait</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <button class="btn btn-accent" onclick="downloadMetadata()">↓ Download JSON</button>
+            <button class="btn btn-outline" onclick="copyMetadata()">Copy JSON</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title" style="font-size:16px;margin-bottom:12px">JSON Preview</div>
+        <div class="json-preview" id="meta-json-preview">{ }</div>
+        <div style="margin-top:12px;font-family:var(--font-mono);font-size:11px;color:var(--text3)">
+          This JSON must be uploaded to IPFS. The IPFS hash (CID) becomes your tokenURI.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!--  TAB: TX LOG                                                     -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div id="tab-txlog" class="tab-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+      <div><div class="section-title">Transaction Log</div><div class="section-sub">All minting and transfer transactions</div></div>
+      <button class="btn btn-outline" onclick="clearTxLog()">Clear</button>
+    </div>
+    <div class="tx-log" id="tx-log-list">
+      <div class="empty-state"><div class="icon">📋</div><p>No transactions yet</p></div>
+    </div>
+  </div>
+
+</div><!-- /.app -->
+
+<!-- ── NFT Detail Modal ───────────────────────────────────────────────── -->
+<div class="modal-overlay" id="nft-modal" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeNFTModal()">✕</button>
+    <img id="modal-img" class="modal-img" src="" alt="">
+    <div class="modal-title" id="modal-name">—</div>
+    <div id="modal-desc" class="modal-desc">—</div>
+    <div class="modal-attrs" id="modal-attrs"></div>
+    <div class="info-grid" style="margin-bottom:16px" id="modal-info"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="openOnOpensea()">View on OpenSea ↗</button>
+      <button class="btn btn-outline"  onclick="transferFromModal()">Transfer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT                                                          -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<script>
+
+// ── State ──────────────────────────────────────────────────────────────
+const state = {
+  walletAddress:  null,
+  chainId:        null,
+  provider:       null,
+  signer:         null,
+  contractAddr:   null,
+  imageFile:      null,
+  jsonFile:       null,
+  imageCID:       null,
+  metaCID:        null,
+  mintedNFTs:     JSON.parse(localStorage.getItem('mintedNFTs') || '[]'),
+  txLog:          JSON.parse(localStorage.getItem('txLog') || '[]'),
+  currentNFT:     null,
+  gateway:        'local',
+  pinataJWT:      '',
+};
+
+// ── Chain config ─────────────────────────────────────────────────────
+const CHAINS = {
+  1:        { name:'Ethereum Mainnet',  explorer:'https://etherscan.io',                    opensea:'https://opensea.io/assets/ethereum' },
+  11155111: { name:'Ethereum Sepolia',  explorer:'https://sepolia.etherscan.io',             opensea:'https://testnets.opensea.io/assets/sepolia' },
+  137:      { name:'Polygon Mainnet',   explorer:'https://polygonscan.com',                  opensea:'https://opensea.io/assets/matic' },
+  80002:    { name:'Polygon Amoy',      explorer:'https://amoy.polygonscan.com',             opensea:'https://testnets.opensea.io/assets/amoy' },
+  56:       { name:'BNB Chain',         explorer:'https://bscscan.com',                      opensea:null },
+  97:       { name:'BNB Testnet',       explorer:'https://testnet.bscscan.com',              opensea:null },
+  42161:    { name:'Arbitrum One',      explorer:'https://arbiscan.io',                      opensea:'https://opensea.io/assets/arbitrum' },
+  421614:   { name:'Arbitrum Sepolia',  explorer:'https://sepolia.arbiscan.io',              opensea:'https://testnets.opensea.io/assets/arbitrum_sepolia' },
+  8453:     { name:'Base',              explorer:'https://basescan.org',                     opensea:'https://opensea.io/assets/base' },
+  84532:    { name:'Base Sepolia',      explorer:'https://sepolia.basescan.org',             opensea:'https://testnets.opensea.io/assets/base_sepolia' },
+  43114:    { name:'Avalanche',         explorer:'https://snowtrace.io',                     opensea:null },
+  43113:    { name:'Avalanche Fuji',    explorer:'https://testnet.snowtrace.io',             opensea:null },
+  10:       { name:'Optimism',          explorer:'https://optimistic.etherscan.io',          opensea:'https://opensea.io/assets/optimism' },
+  11155420: { name:'Optimism Sepolia',  explorer:'https://sepolia-optimism.etherscan.io',   opensea:null },
+};
+
+// ── Minimal ABI for FreeToMintNFT ────────────────────────────────────
+const NFT_ABI = [
+  "function mint(string calldata _tokenURI) returns (uint256)",
+  "function batchMint(string[] calldata _tokenURIs) returns (uint256[])",
+  "function transferFrom(address from, address to, uint256 tokenId)",
+  "function safeTransferFrom(address from, address to, uint256 tokenId)",
+  "function ownerOf(uint256 tokenId) view returns (address)",
+  "function balanceOf(address owner) view returns (uint256)",
+  "function tokenURI(uint256 tokenId) view returns (string)",
+  "function totalSupply() view returns (uint256)",
+  "function name() view returns (string)",
+  "function symbol() view returns (string)",
+  "function approve(address to, uint256 tokenId)",
+  "function setApprovalForAll(address operator, bool approved)",
+  "function contractURI() view returns (string)",
+  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
+  "event Minted(address indexed minter, uint256 indexed tokenId, string tokenURI)",
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// Wallet
+// ═══════════════════════════════════════════════════════════════════
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    showStatus('MetaMask not found. Install from metamask.io', 'error');
+    return;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    state.walletAddress = accounts[0];
+    const chainHex = await window.ethereum.request({ method: 'eth_chainId' });
+    state.chainId = parseInt(chainHex, 16);
+
+    const btn = document.getElementById('wallet-btn');
+    btn.textContent = shortAddr(state.walletAddress);
+    btn.classList.add('connected');
+
+    updateNetBadge();
+    showStatus(`Connected: ${state.walletAddress}`, 'success');
+    updateExplorerLinks();
+
+    window.ethereum.on('accountsChanged', a => { state.walletAddress = a[0]; btn.textContent = shortAddr(a[0]); });
+    window.ethereum.on('chainChanged', c => { state.chainId = parseInt(c,16); updateNetBadge(); updateExplorerLinks(); });
+  } catch(e) {
+    showStatus('Wallet connection rejected', 'error');
+  }
+}
+
+function updateNetBadge() {
+  const badge = document.getElementById('net-badge');
+  const name  = document.getElementById('net-name');
+  badge.style.display = 'inline-flex';
+  name.textContent = (CHAINS[state.chainId] || {}).name || `Chain ${state.chainId}`;
+  document.getElementById('stat-chain').textContent = name.textContent;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// File handling
+// ═══════════════════════════════════════════════════════════════════
+
+function handleImageFile(file) {
+  if (!file) return;
+  if (file.size > 50 * 1024 * 1024) { showStatus('Image too large (max 50 MB)', 'error'); return; }
+  state.imageFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dz = document.getElementById('img-drop');
+    dz.classList.add('has-file');
+    document.getElementById('img-preview').src = e.target.result;
+    document.getElementById('img-name').textContent = file.name;
+    document.getElementById('img-size').textContent = formatBytes(file.size);
+    if (!document.getElementById('nft-name').value)
+      document.getElementById('nft-name').value = file.name.replace(/\.[^.]+$/, '');
+    updateJsonPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleJsonFile(file) {
+  if (!file) return;
+  state.jsonFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const dz = document.getElementById('json-drop');
+      dz.classList.add('has-file');
+      document.getElementById('json-name').textContent = file.name;
+      document.getElementById('json-size').textContent = formatBytes(file.size);
+      if (data.name) document.getElementById('nft-name').value = data.name;
+      if (data.description) document.getElementById('nft-desc').value = data.description;
+      if (data.external_url) document.getElementById('nft-url').value = data.external_url;
+      updateJsonPreview();
+    } catch { showStatus('Invalid JSON file', 'error'); }
+  };
+  reader.readAsText(file);
+}
+
+function clearImage(e) { e.stopPropagation(); state.imageFile=null; document.getElementById('img-drop').classList.remove('has-file'); document.getElementById('img-input').value=''; }
+function clearJson(e)  { e.stopPropagation(); state.jsonFile=null;  document.getElementById('json-drop').classList.remove('has-file'); document.getElementById('json-input').value=''; }
+
+// Drag & drop
+['img-drop','json-drop'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('over'); });
+  el.addEventListener('dragleave', ()=> el.classList.remove('over'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('over');
+    const files = e.dataTransfer.files;
+    if (!files.length) return;
+    if (id === 'img-drop') handleImageFile(files[0]);
+    else handleJsonFile(files[0]);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// Attributes
+// ═══════════════════════════════════════════════════════════════════
+
+let attrCount = 0;
+function addAttribute(trait='', value='') {
+  const id = ++attrCount;
+  const row = document.createElement('div');
+  row.className = 'attr-row';
+  row.id = `attr-${id}`;
+  row.innerHTML = `
+    <input type="text" placeholder="Trait type" value="${trait}" oninput="updateJsonPreview()" id="at-${id}">
+    <input type="text" placeholder="Value"      value="${value}" oninput="updateJsonPreview()" id="av-${id}">
+    <button class="attr-remove" onclick="document.getElementById('attr-${id}').remove();updateJsonPreview()">−</button>
+  `;
+  document.getElementById('attrs-container').appendChild(row);
+  updateJsonPreview();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// JSON preview updater
+// ═══════════════════════════════════════════════════════════════════
+
+function buildMetadata(prefix='nft') {
+  const name  = document.getElementById(prefix+'-name').value;
+  const desc  = document.getElementById(prefix+'-desc').value;
+  const url   = document.getElementById(prefix+'-url')?.value || document.getElementById('mb-url')?.value || '';
+  const bg    = document.getElementById(prefix+'-bg')?.value || '';
+  const attrs = [];
+  document.querySelectorAll(`[id^="at-"]`).forEach(el => {
+    const id = el.id.replace('at-','');
+    const v  = document.getElementById(`av-${id}`)?.value;
+    if (el.value || v) attrs.push({ trait_type: el.value, value: v || '' });
+  });
+  const meta = { name, description: desc };
+  if (state.imageCID) meta.image = `ipfs://${state.imageCID}`;
+  else if (state.imageFile) meta.image = `[image will be set after IPFS upload]`;
+  if (url) meta.external_url = url;
+  if (bg)  meta.background_color = bg;
+  if (attrs.length) meta.attributes = attrs;
+  return meta;
+}
+
+function updateJsonPreview() {
+  const meta = buildMetadata();
+  // not rendering to DOM here, only used by mint flow
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Metadata Builder tab
+// ═══════════════════════════════════════════════════════════════════
+
+let mbAttrCount = 0;
+function addMbAttribute() {
+  const id = ++mbAttrCount;
+  const row = document.createElement('div');
+  row.className = 'attr-row'; row.id = `mb-attr-${id}`;
+  row.innerHTML = `<input type="text" placeholder="Trait" id="mba-${id}" oninput="updateMetaBuilder()"><input type="text" placeholder="Value" id="mbv-${id}" oninput="updateMetaBuilder()"><button class="attr-remove" onclick="document.getElementById('mb-attr-${id}').remove();updateMetaBuilder()">−</button>`;
+  document.getElementById('mb-attrs').appendChild(row);
+}
+
+function updateMetaBuilder() {
+  const meta = {
+    name: document.getElementById('mb-name').value,
+    description: document.getElementById('mb-desc').value,
+  };
+  const img = document.getElementById('mb-image').value;
+  const anim = document.getElementById('mb-anim').value;
+  const url = document.getElementById('mb-url').value;
+  if (img) meta.image = img;
+  if (anim) meta.animation_url = anim;
+  if (url) meta.external_url = url;
+  const attrs = [];
+  document.querySelectorAll('[id^="mba-"]').forEach(el => {
+    const id = el.id.replace('mba-','');
+    const v = document.getElementById(`mbv-${id}`)?.value || '';
+    if (el.value || v) attrs.push({ trait_type: el.value, value: v });
+  });
+  if (attrs.length) meta.attributes = attrs;
+  document.getElementById('meta-json-preview').innerHTML = syntaxHighlight(JSON.stringify(meta, null, 2));
+}
+
+function downloadMetadata() {
+  const meta = {
+    name: document.getElementById('mb-name').value,
+    description: document.getElementById('mb-desc').value,
+    image: document.getElementById('mb-image').value,
+  };
+  const blob = new Blob([JSON.stringify(meta, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'metadata.json'; a.click();
+}
+
+function copyMetadata() {
+  const meta = document.getElementById('meta-json-preview').textContent;
+  navigator.clipboard.writeText(meta).then(()=>showStatus('JSON copied to clipboard','success'));
+}
+
+function syntaxHighlight(json) {
+  return json
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+      let cls = 'json-num';
+      if (/^"/.test(m)) { cls = /:$/.test(m) ? 'json-key' : 'json-str'; }
+      else if (/true|false/.test(m)) { cls = 'json-bool'; }
+      return `<span class="${cls}">${m}</span>`;
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// IPFS Upload
+// ═══════════════════════════════════════════════════════════════════
+
+function updateGateway() {
+  state.gateway = document.getElementById('ipfs-gateway').value;
+  document.getElementById('pinata-key-field').style.display =
+    state.gateway === 'pinata' ? '' : 'none';
+}
+
+async function uploadToIPFS(file, isJson = false) {
+  const jwt = document.getElementById('pinata-jwt').value.trim();
+  state.pinataJWT = jwt;
+
+  if (state.gateway === 'local' || !jwt) {
+    // Demo mode: simulate a CID
+    await new Promise(r => setTimeout(r, 800));
+    return 'QmDEMO' + Math.random().toString(36).slice(2, 12).toUpperCase();
+  }
+
+  // Real Pinata upload
+  const formData = new FormData();
+  if (isJson) {
+    const blob = new Blob([file], { type: 'application/json' });
+    formData.append('file', blob, 'metadata.json');
+  } else {
+    formData.append('file', file, file.name);
+  }
+
+  const metadata = JSON.stringify({ name: isJson ? 'NFT Metadata' : file.name });
+  formData.append('pinataMetadata', metadata);
+  formData.append('pinataOptions', JSON.stringify({ cidVersion: 1 }));
+
+  const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${jwt}` },
+    body: formData,
+  });
+  if (!res.ok) throw new Error(`Pinata error: ${res.status} ${await res.text()}`);
+  const data = await res.json();
+  return data.IpfsHash;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Mint NFT
+// ═══════════════════════════════════════════════════════════════════
+
+async function mintNFT() {
+  const name    = document.getElementById('nft-name').value.trim();
+  const addr    = document.getElementById('contract-addr').value.trim();
+
+  if (!name)  { showStatus('Enter a name for your NFT', 'error'); return; }
+  if (!addr)  { showStatus('Enter the deployed contract address', 'error'); return; }
+  if (!state.imageFile) { showStatus('Upload an artwork image first', 'error'); return; }
+
+  if (!window.ethereum) { showStatus('MetaMask required', 'error'); return; }
+  if (!state.walletAddress) { await connectWallet(); if (!state.walletAddress) return; }
+
+  const btn = document.getElementById('mint-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">⟳</span> Processing…';
+
+  setStep(2);
+  showStatus('Uploading image to IPFS…', 'info');
+  setProgress(0, 'Uploading image to IPFS…');
+
+  try {
+    // Step 1: Upload image
+    state.imageCID = await uploadToIPFS(state.imageFile);
+    setProgress(40, 'Image pinned · Building metadata…');
+
+    // Step 2: Build metadata JSON
+    const metadata = buildMintMetadata(name, addr);
+    const metaJson = JSON.stringify(metadata);
+
+    setProgress(55, 'Uploading metadata to IPFS…');
+    showStatus('Uploading metadata to IPFS…', 'info');
+
+    // Step 3: Upload metadata
+    state.metaCID = await uploadToIPFS(metaJson, true);
+    const tokenURI = `ipfs://${state.metaCID}`;
+
+    setProgress(70, 'Awaiting wallet confirmation…');
+    showStatus('Confirm the transaction in MetaMask…', 'info');
+    setStep(3);
+
+    // Step 4: Send mint transaction
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer   = await provider.getSigner();
+    const contract = new ethers.Contract(addr, NFT_ABI, signer);
+
+    const tx = await contract.mint(tokenURI);
+    setProgress(85, 'Transaction submitted · Waiting for confirmation…');
+    addToTxLog(tx.hash, 'pending', `Mint: ${name}`);
+    showStatus(`TX submitted: ${shortAddr(tx.hash)}`, 'info');
+
+    const receipt = await tx.wait();
+    setProgress(100, 'Confirmed!');
+    setStep(4);
+
+    // Parse token ID from Minted event
+    let tokenId = '?';
+    const mintedEvent = contract.interface.parseLog(
+      receipt.logs.find(l => {
+        try { return contract.interface.parseLog(l)?.name === 'Minted'; } catch { return false; }
+      }) || receipt.logs[receipt.logs.length - 1]
+    );
+    if (mintedEvent) tokenId = mintedEvent.args[1].toString();
+
+    updateTxLog(tx.hash, 'success');
+    showStatus(`✓ Minted token #${tokenId}`, 'success');
+
+    // Save to local state
+    const nft = {
+      tokenId, name, description: document.getElementById('nft-desc').value,
+      image: `ipfs://${state.imageCID}`, tokenURI,
+      contract: addr, chain: state.chainId,
+      owner: state.walletAddress, txHash: tx.hash,
+      mintedAt: Date.now(),
+    };
+    state.mintedNFTs.unshift(nft);
+    localStorage.setItem('mintedNFTs', JSON.stringify(state.mintedNFTs));
+    showMintResult(nft);
+
+  } catch (err) {
+    showStatus('Error: ' + (err.reason || err.message || 'Unknown error'), 'error');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⬡ Free Mint';
+    hideMintProgress();
+  }
+}
+
+function buildMintMetadata(name, contractAddr) {
+  const desc  = document.getElementById('nft-desc').value;
+  const url   = document.getElementById('nft-url').value;
+  const bg    = document.getElementById('nft-bg').value;
+  const attrs = [];
+  document.querySelectorAll('[id^="at-"]').forEach(el => {
+    const id = el.id.replace('at-','');
+    const v  = document.getElementById(`av-${id}`)?.value || '';
+    if (el.value) attrs.push({ trait_type: el.value, value: v });
+  });
+  const meta = {
+    name, description: desc,
+    image: `ipfs://${state.imageCID}`,
+  };
+  if (url) meta.external_url = url;
+  if (bg)  meta.background_color = bg;
+  if (attrs.length) meta.attributes = attrs;
+  meta._contract = contractAddr;
+  meta._chain    = CHAINS[state.chainId]?.name || `Chain ${state.chainId}`;
+  return meta;
+}
+
+function showMintResult(nft) {
+  const chainInfo = CHAINS[nft.chain] || {};
+  const explorerURL = chainInfo.explorer
+    ? `${chainInfo.explorer}/tx/${nft.txHash}`
+    : '#';
+  const opensea = chainInfo.opensea
+    ? `${chainInfo.opensea}/${nft.contract}/${nft.tokenId}`
+    : null;
+
+  document.getElementById('mint-result').style.display = 'block';
+  document.getElementById('mint-result-body').innerHTML = `
+    <div class="info-grid" style="margin:12px 0">
+      <div class="info-card"><div class="info-label">Token ID</div><div class="info-value accent">#${nft.tokenId}</div></div>
+      <div class="info-card"><div class="info-label">Owner</div><div class="info-value" style="font-size:10px">${nft.owner}</div></div>
+      <div class="info-card"><div class="info-label">Image CID</div><div class="info-value" style="font-size:10px">${state.imageCID}</div></div>
+      <div class="info-card"><div class="info-label">Metadata CID</div><div class="info-value" style="font-size:10px">${state.metaCID}</div></div>
+    </div>
+    <div class="contract-display">
+      <span>Token URI: ipfs://${state.metaCID}</span>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('ipfs://${state.metaCID}')">Copy</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="${explorerURL}" target="_blank" class="btn btn-outline" style="font-size:12px">View on Explorer ↗</a>
+      ${opensea ? `<a href="${opensea}" target="_blank" class="btn btn-accent" style="font-size:12px">View on OpenSea ↗</a>` : ''}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Gallery
+// ═══════════════════════════════════════════════════════════════════
+
+async function loadGallery() {
+  const addr = document.getElementById('contract-addr').value.trim();
+  const grid = document.getElementById('gallery-grid');
+
+  document.getElementById('stat-contract').textContent = addr ? shortAddr(addr) : '—';
+  document.getElementById('stat-chain').textContent = (CHAINS[state.chainId]||{}).name || '—';
+
+  // Load from local storage (minted this session)
+  const local = state.mintedNFTs.filter(n =>
+    (!addr || n.contract.toLowerCase() === addr.toLowerCase())
+  );
+
+  // If wallet + contract connected, fetch on-chain data
+  if (window.ethereum && state.walletAddress && addr) {
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(addr, NFT_ABI, provider);
+      const [total, balance] = await Promise.all([
+        contract.totalSupply().catch(()=>0n),
+        contract.balanceOf(state.walletAddress).catch(()=>0n),
+      ]);
+      document.getElementById('stat-total').textContent   = total.toString();
+      document.getElementById('stat-balance').textContent = balance.toString();
+    } catch(e) { console.warn(e); }
+  }
+
+  if (!local.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">🎨</div><p>No NFTs found. Mint your first one!</p></div>`;
+    return;
+  }
+
+  document.getElementById('stat-total').textContent   = local.length;
+  document.getElementById('stat-balance').textContent = local.filter(n => n.owner === state.walletAddress).length;
+
+  grid.innerHTML = '';
+  local.forEach(nft => {
+    const card = document.createElement('div');
+    card.className = 'nft-card fade-in';
+    card.onclick = () => openNFTModal(nft);
+
+    const imgUrl = nft.image?.startsWith('ipfs://')
+      ? `https://ipfs.io/ipfs/${nft.image.slice(7)}`
+      : nft.image || '';
+
+    card.innerHTML = `
+      ${imgUrl
+        ? `<img class="nft-card-img" src="${imgUrl}" alt="${nft.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        : ''}
+      <div class="nft-card-img-placeholder" style="display:${imgUrl?'none':'flex'}">🖼️</div>
+      <div class="nft-card-body">
+        <div class="nft-card-name">${nft.name}</div>
+        <div class="nft-card-id">Token #${nft.tokenId}</div>
+        <div class="nft-card-owner">${nft.owner}</div>
+        <div class="nft-card-tags">
+          <span class="tag">${(CHAINS[nft.chain]||{}).name || 'Chain '+nft.chain}</span>
+          <span class="tag">ERC-721</span>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Transfer
+// ═══════════════════════════════════════════════════════════════════
+
+async function transferNFT() {
+  const addr    = document.getElementById('contract-addr').value.trim();
+  const tokenId = document.getElementById('transfer-tokenid').value.trim();
+  const to      = document.getElementById('transfer-to').value.trim();
+  if (!addr || !tokenId || !to) { showStatus('Fill all transfer fields', 'error'); return; }
+  if (!state.walletAddress) { await connectWallet(); if (!state.walletAddress) return; }
+
+  try {
+    showStatus('Confirm transfer in MetaMask…', 'info');
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer   = await provider.getSigner();
+    const contract = new ethers.Contract(addr, NFT_ABI, signer);
+    const tx = await contract.transferFrom(state.walletAddress, to, tokenId);
+    addToTxLog(tx.hash, 'pending', `Transfer #${tokenId} → ${shortAddr(to)}`);
+    await tx.wait();
+    updateTxLog(tx.hash, 'success');
+    showStatus(`✓ Token #${tokenId} transferred to ${shortAddr(to)}`, 'success');
+    loadGallery();
+  } catch(e) {
+    showStatus('Transfer failed: ' + (e.reason || e.message), 'error');
+  }
+}
+
+function transferFromModal() {
+  const nft = state.currentNFT;
+  if (!nft) return;
+  document.getElementById('transfer-tokenid').value = nft.tokenId;
+  switchTab('contract', document.querySelectorAll('.tab-btn')[2]);
+  closeNFTModal();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NFT Modal
+// ═══════════════════════════════════════════════════════════════════
+
+function openNFTModal(nft) {
+  state.currentNFT = nft;
+  const imgUrl = nft.image?.startsWith('ipfs://')
+    ? `https://ipfs.io/ipfs/${nft.image.slice(7)}`
+    : nft.image || '';
+  document.getElementById('modal-img').src  = imgUrl;
+  document.getElementById('modal-name').textContent = nft.name;
+  document.getElementById('modal-desc').textContent = nft.description || 'No description';
+
+  const attrs = document.getElementById('modal-attrs');
+  attrs.innerHTML = '';
+  (nft.attributes||[]).forEach(a => {
+    attrs.innerHTML += `<div class="attr-chip"><div class="attr-chip-key">${a.trait_type||''}</div><div class="attr-chip-val">${a.value||''}</div></div>`;
+  });
+
+  document.getElementById('modal-info').innerHTML = `
+    <div class="info-card"><div class="info-label">Token ID</div><div class="info-value accent">#${nft.tokenId}</div></div>
+    <div class="info-card"><div class="info-label">Owner</div><div class="info-value" style="font-size:10px">${nft.owner}</div></div>
+    <div class="info-card"><div class="info-label">Chain</div><div class="info-value yellow">${(CHAINS[nft.chain]||{}).name||'?'}</div></div>
+    <div class="info-card"><div class="info-label">Standard</div><div class="info-value">ERC-721</div></div>
+  `;
+
+  document.getElementById('nft-modal').classList.add('open');
+}
+
+function closeModal(e) { if (e.target === document.getElementById('nft-modal')) closeNFTModal(); }
+function closeNFTModal() { document.getElementById('nft-modal').classList.remove('open'); }
+
+function openOnOpensea() {
+  const nft = state.currentNFT;
+  if (!nft) return;
+  const chain = CHAINS[nft.chain];
+  if (chain?.opensea) window.open(`${chain.opensea}/${nft.contract}/${nft.tokenId}`, '_blank');
+  else showStatus('OpenSea not available for this chain', 'info');
+}
+
+function openOpensea() {
+  const addr  = document.getElementById('contract-addr').value.trim();
+  const chain = CHAINS[state.chainId];
+  if (chain?.opensea && addr) window.open(`${chain.opensea}/${addr}`, '_blank');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Tx Log
+// ═══════════════════════════════════════════════════════════════════
+
+function addToTxLog(hash, status, label) {
+  const chain = CHAINS[state.chainId];
+  const entry = { hash, status, label, chain: state.chainId, time: Date.now(), explorerURL: chain ? `${chain.explorer}/tx/${hash}` : '#' };
+  state.txLog.unshift(entry);
+  localStorage.setItem('txLog', JSON.stringify(state.txLog));
+  renderTxLog();
+}
+
+function updateTxLog(hash, status) {
+  const entry = state.txLog.find(t => t.hash === hash);
+  if (entry) { entry.status = status; localStorage.setItem('txLog', JSON.stringify(state.txLog)); renderTxLog(); }
+}
+
+function renderTxLog() {
+  const list = document.getElementById('tx-log-list');
+  if (!state.txLog.length) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>No transactions yet</p></div>`; return;
+  }
+  list.innerHTML = state.txLog.map(t => `
+    <div class="tx-item fade-in">
+      <span class="tx-dot ${t.status}"></span>
+      <a class="tx-hash" href="${t.explorerURL}" target="_blank">${t.hash}</a>
+      <span style="font-size:11px;color:var(--text2);white-space:nowrap">${t.label||''}</span>
+      <span class="tx-time">${timeAgo(t.time)}</span>
+    </div>`).join('');
+}
+
+function clearTxLog() { state.txLog=[]; localStorage.setItem('txLog','[]'); renderTxLog(); }
+
+// ═══════════════════════════════════════════════════════════════════
+// UI helpers
+// ═══════════════════════════════════════════════════════════════════
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'gallery') loadGallery();
+  if (name === 'txlog') renderTxLog();
+}
+
+function showStatus(msg, type='info') {
+  const bar = document.getElementById('status-bar');
+  const txt = document.getElementById('status-msg');
+  bar.className = `show ${type}`;
+  txt.textContent = msg;
+  clearTimeout(bar._timer);
+  if (type !== 'info') bar._timer = setTimeout(()=>bar.classList.remove('show'), 6000);
+}
+
+function setStep(n) {
+  for (let i=1; i<=4; i++) {
+    const el = document.getElementById(`step-${i}`);
+    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  }
+}
+
+function setProgress(pct, label) {
+  const wrap = document.getElementById('mint-progress');
+  wrap.classList.add('show');
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label-text').textContent = label;
+  document.getElementById('progress-pct').textContent = pct + '%';
+}
+function hideMintProgress() { document.getElementById('mint-progress').classList.remove('show'); }
+
+function updateContractDisplay() {
+  const v = document.getElementById('contract-addr').value.trim();
+  document.getElementById('contract-addr-display').textContent = v || 'Not set — enter address in Mint tab';
+  updateExplorerLinks();
+}
+
+function updateExplorerLinks() {
+  const addr  = document.getElementById('contract-addr').value.trim();
+  const chain = CHAINS[state.chainId] || {};
+  if (addr && chain.explorer) {
+    document.getElementById('link-etherscan').href = `${chain.explorer}/address/${addr}`;
+    document.getElementById('link-opensea').href   = chain.opensea ? `${chain.opensea}/${addr}` : '#';
+    document.getElementById('link-sourcify').href  = `https://sourcify.dev/#/lookup/${addr}`;
+  }
+}
+
+function copyContract() {
+  const v = document.getElementById('contract-addr').value.trim();
+  if (v) navigator.clipboard.writeText(v).then(()=>showStatus('Copied!','success'));
+}
+
+function shortAddr(a) { return a ? a.slice(0,6)+'…'+a.slice(-4) : ''; }
+function formatBytes(b) { if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+function timeAgo(ts) {
+  const s = Math.floor((Date.now()-ts)/1000);
+  if (s<60) return 'just now';
+  if (s<3600) return Math.floor(s/60)+'m ago';
+  if (s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Load ethers.js from CDN
+// ═══════════════════════════════════════════════════════════════════
+
+(function loadEthers() {
+  if (window.ethers) return;
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js';
+  s.onload  = () => console.log('ethers.js loaded');
+  s.onerror = () => showStatus('Failed to load ethers.js — check network', 'error');
+  document.head.appendChild(s);
+})();
+
+// ── Init ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  addAttribute();  // start with one attribute row
+  updateGateway();
+  renderTxLog();
+  if (window.ethereum) {
+    window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+      if (accounts[0]) {
+        state.walletAddress = accounts[0];
+        const btn = document.getElementById('wallet-btn');
+        btn.textContent = shortAddr(accounts[0]);
+        btn.classList.add('connected');
+        window.ethereum.request({ method: 'eth_chainId' }).then(c => {
+          state.chainId = parseInt(c,16);
+          updateNetBadge();
+        });
+      }
+    }).catch(()=>{});
+  }
+});
+</script>
+</body>
+</html>
