@@ -1,0 +1,38 @@
+{
+  "_comment": "Upload this file to IPFS. The resulting URI (ipfs://CID) is your tokenURI.",
+  "name": "Dragon #001",
+  "description": "A legendary dragon born from the blockchain. Fierce, eternal, and uniquely yours.",
+  "image": "ipfs://QmYOUR_ARTWORK_IMAGE_CID_HERE",
+  "animation_url": "",
+  "external_url": "https://yourwebsite.com/nft/1",
+  "background_color": "0a0a0f",
+  "attributes": [
+    {
+      "trait_type": "Species",
+      "value": "Eastern Dragon"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Fire"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Generation",
+      "value": "Genesis"
+    },
+    {
+      "trait_type": "Power Level",
+      "value": 9500,
+      "display_type": "number",
+      "max_value": 10000
+    },
+    {
+      "trait_type": "Birth Year",
+      "value": 2024,
+      "display_type": "number"
+    }
+  ]
+}
