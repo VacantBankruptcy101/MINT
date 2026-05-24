@@ -1,0 +1,12 @@
+{
+  "_comment": "Upload this file to IPFS. The resulting CID goes into the contractURI constructor param.",
+  "name": "My Free NFT Collection",
+  "description": "A unique collection of digital artworks minted free on Ethereum. Each piece is a one-of-a-kind token stored permanently on the blockchain.",
+  "image": "ipfs://QmYOUR_COLLECTION_IMAGE_CID_HERE",
+  "external_link": "https://yourwebsite.com",
+  "seller_fee_basis_points": 500,
+  "fee_recipient": "0xYOUR_WALLET_ADDRESS_HERE",
+  "banner_image_url": "ipfs://QmYOUR_BANNER_IMAGE_CID_HERE",
+  "featured_image_url": "ipfs://QmYOUR_FEATURED_IMAGE_CID_HERE",
+  "collaborators": []
+}
