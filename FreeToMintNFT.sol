@@ -42,7 +42,7 @@ interface IERC2981 is IERC165 {
         returns (address receiver, uint256 royaltyAmount);
 }
 
-contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
+contract FreeToMintNFT is IERC721, IERC2981 {
     address public owner;
 
     uint256 public totalSupply;
@@ -61,6 +61,8 @@ contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
     mapping(address => mapping(address => bool)) private _operatorApprovals;
     mapping(uint256 => string) private _tokenURIs;
 
+    bool private _mintingOrAirdropping;
+
     event Minted(address indexed to, uint256 indexed tokenId, string uri);
     event ContractURIUpdated(string newURI);
     event MintingPaused(bool paused);
@@ -71,45 +73,67 @@ contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
         _;
     }
 
+    modifier nonReentrantMint() {
+        require(!_mintingOrAirdropping, "Reentrant mint");
+        _mintingOrAirdropping = true;
+        _;
+        _mintingOrAirdropping = false;
+    }
+
     constructor() {
         owner = msg.sender;
         royaltyReceiver = msg.sender;
     }
 
-    function mint(uint256 qty, string[] calldata _tokenURIs)
+    function mint(uint256 qty, string[] calldata NFT_tokenURIs)
         external
+        nonReentrantMint
         returns (uint256[] memory tokenIds)
     {
         require(!mintingPaused, "Minting is paused");
         require(qty > 0, "Quantity must be greater than zero");
-        require(_tokenURIs.length == qty, "Length mismatch");
+        require(NFT_tokenURIs.length == qty, "Length mismatch");
 
         if (maxSupply > 0) {
             require(totalSupply + qty <= maxSupply, "Max supply exceeded");
         }
         if (maxPerWallet > 0) {
-            require(mintedByWallet[msg.sender] + qty <= maxPerWallet, "Wallet cap exceeded");
+            require(
+                mintedByWallet[msg.sender] + qty <= maxPerWallet,
+                "Wallet cap exceeded"
+            );
         }
 
         tokenIds = new uint256[](qty);
         for (uint256 i = 0; i < qty; i++) {
-            require(bytes(_tokenURIs[i]).length > 0, "Empty URI");
+            require(bytes(NFT_tokenURIs[i]).length > 0, "Empty URI");
             uint256 tokenId = ++totalSupply;
             tokenIds[i] = tokenId;
-            _safeMint(msg.sender, tokenId, _tokenURIs[i]);
+            _safeMint(msg.sender, tokenId, NFT_tokenURIs[i]);
         }
     }
 
     /**
      * @notice Owner can airdrop NFTs to a list of recipients.
      */
-    function airdrop(address[] calldata recipients, string[] calldata _tokenURIs)
-        external onlyOwner
+    function airdrop(address[] calldata recipients, string[] calldata tokenURIs)
+        external
+        onlyOwner
+        nonReentrantMint
     {
-        require(recipients.length == _tokenURIs.length, "Length mismatch");
+        require(recipients.length == tokenURIs.length, "Length mismatch");
+
+        if (maxSupply > 0) {
+            require(
+                totalSupply + recipients.length <= maxSupply,
+                "Max supply exceeded"
+            );
+        }
+
         for (uint256 i = 0; i < recipients.length; i++) {
+            require(bytes(tokenURIs[i]).length > 0, "Empty URI");
             uint256 tokenId = ++totalSupply;
-            _safeMint(recipients[i], tokenId, _tokenURIs[i]);
+            _safeMint(recipients[i], tokenId, tokenURIs[i]);
         }
     }
 
@@ -140,10 +164,13 @@ contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
     // ERC-2981 Royalties
     // ─────────────────────────────────────────────────────────────────────────
 
-    function royaltyInfo(uint256 /*tokenId*/, uint256 salePrice)
-        external view override returns (address receiver, uint256 royaltyAmount)
+    function royaltyInfo(uint256, uint256 salePrice)
+        external
+        view
+        override
+        returns (address receiver, uint256 royaltyAmount)
     {
-        receiver      = royaltyReceiver;
+        receiver = royaltyReceiver;
         royaltyAmount = (salePrice * royaltyBasisPoints) / 10_000;
     }
 
@@ -164,8 +191,10 @@ contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
 
     function approve(address to, uint256 tokenId) external override {
         address tokenOwner = _owners[tokenId];
-        require(msg.sender == tokenOwner || _operatorApprovals[tokenOwner][msg.sender],
-            "Not owner nor approved for all");
+        require(
+            msg.sender == tokenOwner || _operatorApprovals[tokenOwner][msg.sender],
+            "Not owner nor approved for all"
+        );
         _tokenApprovals[tokenId] = to;
         emit Approval(tokenOwner, to, tokenId);
     }
@@ -182,7 +211,10 @@ contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
     }
 
     function isApprovedForAll(address _owner, address operator)
-        external view override returns (bool)
+        external
+        view
+        override
+        returns (bool)
     {
         return _operatorApprovals[_owner][operator];
     }
@@ -192,25 +224,44 @@ contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
         _transfer(from, to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId) external override {
-        safeTransferFrom(from, to, tokenId, "");
-    }
-
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data)
-        public override
+    function safeTransferFrom(address from, address to, uint256 tokenId)
+        external
+        override
     {
         require(_isApprovedOrOwner(msg.sender, tokenId), "Transfer not approved");
         _transfer(from, to, tokenId);
-        require(_checkOnERC721Received(from, to, tokenId, data), "Non ERC721Receiver");
+        require(
+            _checkOnERC721Received(from, to, tokenId, ""),
+            "Non ERC721Receiver"
+        );
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override {
+        require(_isApprovedOrOwner(msg.sender, tokenId), "Transfer not approved");
+        _transfer(from, to, tokenId);
+        require(
+            _checkOnERC721Received(from, to, tokenId, data),
+            "Non ERC721Receiver"
+        );
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // ERC-165 Interface Detection
     // ─────────────────────────────────────────────────────────────────────────
 
-    function supportsInterface(bytes4 interfaceId) external pure override(IERC165, IERC2981) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        external
+        pure
+        override(IERC165)
+        returns (bool)
+    {
         return
-            interfaceId == type(IERC721).interfaceId  ||
+            interfaceId == type(IERC721).interfaceId ||
             interfaceId == type(IERC2981).interfaceId ||
             interfaceId == type(IERC165).interfaceId;
     }
@@ -232,7 +283,7 @@ contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
     function setRoyalty(address _receiver, uint96 _bps) external onlyOwner {
         require(_bps <= 1000, "Royalty max 10%");
         require(_receiver != address(0), "Zero receiver");
-        royaltyReceiver    = _receiver;
+        royaltyReceiver = _receiver;
         royaltyBasisPoints = _bps;
         emit RoyaltyUpdated(_receiver, _bps);
     }
@@ -261,22 +312,29 @@ contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
 
     function _safeMint(address to, uint256 tokenId, string memory uri) internal {
         require(to != address(0), "Mint to zero address");
-        _owners[tokenId]  = to;
-        _balances[to]    += 1;
+        _owners[tokenId] = to;
+        _balances[to] += 1;
         mintedByWallet[to] += 1;
         _tokenURIs[tokenId] = uri;
+
         emit Transfer(address(0), to, tokenId);
         emit Minted(to, tokenId, uri);
-        require(_checkOnERC721Received(address(0), to, tokenId, ""), "Non ERC721Receiver");
+
+        require(
+            _checkOnERC721Received(address(0), to, tokenId, ""),
+            "Non ERC721Receiver"
+        );
     }
 
     function _transfer(address from, address to, uint256 tokenId) internal {
         require(_owners[tokenId] == from, "Transfer from wrong owner");
         require(to != address(0), "Transfer to zero address");
+
         delete _tokenApprovals[tokenId];
-        _balances[from]  -= 1;
-        _balances[to]    += 1;
-        _owners[tokenId]  = to;
+        _balances[from] -= 1;
+        _balances[to] += 1;
+        _owners[tokenId] = to;
+
         emit Transfer(from, to, tokenId);
     }
 
@@ -284,18 +342,28 @@ contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
         return _owners[tokenId] != address(0);
     }
 
-    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view returns (bool) {
+    function _isApprovedOrOwner(address spender, uint256 tokenId)
+        internal
+        view
+        returns (bool)
+    {
         require(_exists(tokenId), "Operator query for nonexistent token");
         address tokenOwner = _owners[tokenId];
-        return (spender == tokenOwner ||
-                _tokenApprovals[tokenId] == spender ||
-                _operatorApprovals[tokenOwner][spender]);
+
+        return
+            spender == tokenOwner ||
+            _tokenApprovals[tokenId] == spender ||
+            _operatorApprovals[tokenOwner][spender];
     }
 
-    function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory data)
-        private returns (bool)
-    {
+    function _checkOnERC721Received(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) private returns (bool) {
         if (to.code.length == 0) return true;
+
         try IERC721Receiver(to).onERC721Received(msg.sender, from, tokenId, data)
             returns (bytes4 retval)
         {
