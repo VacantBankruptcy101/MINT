@@ -1,3 +1,91 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+interface IERC165 {
+    function supportsInterface(bytes4 interfaceId) external view returns (bool);
+}
+
+interface IERC721 is IERC165 {
+    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
+    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
+
+    function balanceOf(address owner) external view returns (uint256);
+    function ownerOf(uint256 tokenId) external view returns (address);
+    function approve(address to, uint256 tokenId) external;
+    function getApproved(uint256 tokenId) external view returns (address);
+    function setApprovalForAll(address operator, bool approved) external;
+    function isApprovedForAll(address owner, address operator) external view returns (bool);
+    function transferFrom(address from, address to, uint256 tokenId) external;
+    function safeTransferFrom(address from, address to, uint256 tokenId) external;
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes calldata data
+    ) external;
+}
+
+interface IERC721Receiver {
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4);
+}
+
+interface IERC2981 is IERC165 {
+    function royaltyInfo(uint256 tokenId, uint256 salePrice)
+        external
+        view
+        returns (address receiver, uint256 royaltyAmount);
+}
+
+contract FreeToMintNFT is IERC165, IERC721, IERC2981 {
+    address public owner;
+
+    uint256 public totalSupply;
+    uint256 public maxSupply; // 0 means unlimited
+    uint256 public maxPerWallet; // 0 means unlimited
+    bool public mintingPaused;
+
+    string public contractMetadataURI;
+    address public royaltyReceiver;
+    uint96 public royaltyBasisPoints;
+
+    mapping(address => uint256) public mintedByWallet;
+    mapping(address => uint256) private _balances;
+    mapping(uint256 => address) private _owners;
+    mapping(uint256 => address) private _tokenApprovals;
+    mapping(address => mapping(address => bool)) private _operatorApprovals;
+    mapping(uint256 => string) private _tokenURIs;
+
+    event Minted(address indexed to, uint256 indexed tokenId, string uri);
+    event ContractURIUpdated(string newURI);
+    event MintingPaused(bool paused);
+    event RoyaltyUpdated(address indexed receiver, uint96 basisPoints);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+        royaltyReceiver = msg.sender;
+    }
+
+    function mint(uint256 qty, string[] calldata _tokenURIs)
+        external
+        returns (uint256[] memory tokenIds)
+    {
+        require(!mintingPaused, "Minting is paused");
+        require(qty > 0, "Quantity must be greater than zero");
+        require(_tokenURIs.length == qty, "Length mismatch");
+
+        if (maxSupply > 0) {
+            require(totalSupply + qty <= maxSupply, "Max supply exceeded");
         }
         if (maxPerWallet > 0) {
             require(mintedByWallet[msg.sender] + qty <= maxPerWallet, "Wallet cap exceeded");
